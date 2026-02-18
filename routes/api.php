@@ -46,6 +46,8 @@ Route::middleware(['auth.token:penumpang'])->group(function () {
     Route::delete('/penumpang/cancel/{id}', [FormController::class, 'cancelOrder']);
     // Confirm order
     Route::post('/penumpang/confirm/{id}', [FormController::class, 'confirmOrder']);
+    // Review sopir
+    Route::post('/penumpang/review', [PenumpangController::class, 'submitReview']);
 });
 
 // ============================================

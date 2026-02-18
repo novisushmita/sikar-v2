@@ -105,12 +105,14 @@ class PenumpangController extends Controller
         // Cek kebenaran data review
         try {
             $validated = $request->validate([
-                'review' => 'required|string|max:1',
+                'review' => 'required|integer|max:5',
                 'tanggal' => 'required|date',
+                'sopir_id' => 'required|exists:sopir,sopir_id',
             ], [
                 'review.required' => 'Review wajib diisi',
-                'review.max' => 'Review maksimal 1 karakter',
+                'review.max' => 'Review maksimal 5 bintang',
                 'tanggal.required' => 'Tanggal wajib diisi',
+                'sopir_id.required' => 'Sopir wajib diisi',
             ]); 
         } catch (ValidationException $e) {
             return response()->json([
@@ -129,7 +131,7 @@ class PenumpangController extends Controller
             // Insert data order
             ReviewSopir::create([
                 'pengguna_id' => $user->pengguna_id,
-                'review' => $validated['tempat_penjemputan'],
+                'review' => $validated['review'],
                 'tanggal' => $validated['tanggal'],
                 'sopir_id' => $validated['sopir_id'],
             ]);
