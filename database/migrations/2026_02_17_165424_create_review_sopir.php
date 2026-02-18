@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('review_sopir', function (Blueprint $table) {
             $table->id('review_id');
             $table->date('tanggal');
+            $table->integer('review');
             $table->unsignedBigInteger('pengguna_id');
             $table->unsignedBigInteger('sopir_id');
             $table->timestamps();
