@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\ReviewSopir;
 use App\Models\Sopir;
 use Illuminate\Http\Request;
-use App\Http\Resources\OrderResource;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\CarAvailabilityTrait;
 use App\Traits\DataSopirTrait;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 use Exception;
 
@@ -94,5 +96,58 @@ class PenumpangController extends Controller
             'message' => 'Data order berhasil diambil',
             'data' => $detail
         ], 200);
+    }
+    /**
+     * 
+     * */    
+    public function submitReview(Request $request)
+    {
+        // Cek kebenaran data review
+        try {
+            $validated = $request->validate([
+                'review' => 'required|string|max:1',
+                'tanggal' => 'required|date',
+            ], [
+                'review.required' => 'Review wajib diisi',
+                'review.max' => 'Review maksimal 1 karakter',
+                'tanggal.required' => 'Tanggal wajib diisi',
+            ]); 
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        }
+        
+        // Transaksi order
+        DB::beginTransaction();
+        
+        try {
+            $user = $request->auth_user;
+            
+            // Insert data order
+            ReviewSopir::create([
+                'pengguna_id' => $user->pengguna_id,
+                'review' => $validated['tempat_penjemputan'],
+                'tanggal' => $validated['tanggal'],
+                'sopir_id' => $validated['sopir_id'],
+            ]);
+
+            DB::commit();
+            
+            return response()->json([
+                'status' => true,
+                'message' => 'Review berhasil disubmit',
+            ], 201);
+            
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }

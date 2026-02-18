@@ -51,4 +51,9 @@ class Pengguna extends Model
     {
         return $this->hasMany(Order::class, 'pengguna_id', 'pengguna_id');
     }
+
+    public function review()
+    {
+        return $this->hasMany(ReviewSopir::class, 'pengguna_id', 'pengguna_id');
+    }
 }

@@ -44,7 +44,10 @@ class PresensiSopirExport implements
      */
     public function query()
     {
-        $query = HistoryBekerjaSopir::with('sopir');
+        $query = HistoryBekerjaSopir::with('sopir')
+            ->withCount(['review' => function ($q) {
+                $q->whereColumn('review_sopir.tanggal', 'history_bekerja_sopir.tanggal');
+            }]);
         
         // Filter berdasarkan tanggal (jika ada)
         if ($this->startDate && $this->endDate) {
@@ -53,14 +56,12 @@ class PresensiSopirExport implements
                 date("Y-m-d", strtotime($this->endDate)),
             ]);
         } elseif ($this->startDate) {
-            // Jika hanya start date (dari tanggal ini sampai sekarang)
             $query->where('tanggal', '>=', date("Y-m-d", strtotime($this->startDate)));
         } elseif ($this->endDate) {
-            // Jika hanya end date (sampai tanggal ini)
             $query->where('tanggal', '<=', date("Y-m-d", strtotime($this->endDate)));
         }
 
-        $query = $query->orderBy('tanggal', 'desc');
+        $query->orderBy('tanggal', 'desc');
         
         return $query;
     }

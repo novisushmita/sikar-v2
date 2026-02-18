@@ -26,6 +26,10 @@ class Sopir extends Model
     {
         return $this->hasMany(HistoryBekerjaSopir::class, 'sopir_id', 'sopir_id');
     }
+    public function review()
+    {
+        return $this->hasMany(ReviewSopir::class, 'sopir_id', 'sopir_id');
+    }
 
     public function scopeAvailable($query)
     {

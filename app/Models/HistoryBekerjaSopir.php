@@ -28,4 +28,9 @@ class HistoryBekerjaSopir extends Model
     {
         return $this->belongsTo(Sopir::class, 'sopir_id', 'sopir_id');
     }
+
+    public function review()
+    {
+        return $this->hasMany(ReviewSopir::class, 'sopir_id', 'sopir_id');
+    }
 }
