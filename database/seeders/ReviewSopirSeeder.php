@@ -24,18 +24,19 @@ class ReviewSopirSeeder extends Seeder
         $dataReview = [];
 
         foreach ($sopir as $s) {
+            for ($i = 0; $i < 3; $i++) {
+                // Pilih penumpang secara acak
+                $randomPenumpang = $penumpang->random();
 
-            // Pilih penumpang secara acak
-            $randomPenumpang = $penumpang->random();
-
-            $dataReview[] = [
-                'tanggal'     => now()->subDays(rand(1, 30)),
-                'review'      => rand(1, 5),
-                'sopir_id'    => $s->pengguna_id,
-                'pengguna_id' => $randomPenumpang->pengguna_id,
-                'created_at'  => $now,
-                'updated_at'  => $now,
-            ];
+                $dataReview[] = [
+                    'tanggal'     => $now,
+                    'review'      => rand(1, 5),
+                    'sopir_id'    => $s->pengguna_id,
+                    'pengguna_id' => $randomPenumpang->pengguna_id,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ];
+            }
         }
 
         DB::table('review_sopir')->insert($dataReview);
