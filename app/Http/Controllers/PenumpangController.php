@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Pengguna;
 use App\Models\ReviewSopir;
-use App\Models\Sopir;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\CarAvailabilityTrait;
@@ -60,6 +60,12 @@ class PenumpangController extends Controller
 
         // Urutkan dari terbaru
         $orders = $query->orderBy('created_at', 'desc')->get();
+
+        $nomorKepalaSopir = Pengguna::where('role', 'kepala_sopir')->first()->nomor;
+
+        $orders->each(function($order) use ($nomorKepalaSopir) {
+            $order->nomor_kepala_sopir = $nomorKepalaSopir;
+        });
 
         return response()->json([
             'status' => true,
