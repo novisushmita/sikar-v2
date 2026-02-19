@@ -123,7 +123,7 @@ class SopirController extends Controller
             ], 422);
         }
         // Ambil data order, assignment, sopir, mobil, penumpang, dimana data orderan mempunyai assignmentnya dengan sopir_id nya adalah sopir yang login
-        $query = Order::with(['assignment.sopir', 'assignment.mobil', 'penumpang'])
+        $query = Order::with(['assignment.sopir', 'assignment.mobil', 'penumpang', 'review'])
         ->whereHas('assignment', function($query) use ($user) {
             $query->where('sopir_id', $user->pengguna_id);
         });

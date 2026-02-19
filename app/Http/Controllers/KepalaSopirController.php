@@ -36,7 +36,7 @@ class KepalaSopirController extends Controller
         try {
             // Filter berdasarkan status jika ada | jika tidak ada get data pending yang perlu di assign
             if ($request->has('status')) {
-                $query = Order::with(['assignment.sopir', 'assignment.mobil', 'penumpang']);
+                $query = Order::with(['assignment.sopir', 'assignment.mobil', 'penumpang', 'review']);
                 if (trim($request->status) === 'all') {
                     $query = $query->riwayatKepalaSopir();
                 } else {

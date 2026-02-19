@@ -40,6 +40,11 @@ class Order extends Model
         return $this->hasOne(OrderAssignment::class, 'order_id', 'order_id');
     }
 
+    public function review()
+    {
+        return $this->hasOne(ReviewSopir::class, 'order_id', 'order_id');
+    }
+
     public function scopeByStatus($query, $status)
     {
         if ($status) {

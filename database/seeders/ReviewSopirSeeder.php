@@ -11,32 +11,37 @@ class ReviewSopirSeeder extends Seeder
     {
         $now = now();
 
-        // Ambil semua pengguna dengan role sopir
-        $sopir = DB::table('pengguna')
-            ->where('role', 'sopir')
-            ->get();
-
-        // Ambil semua pengguna dengan role penumpang
-        $penumpang = DB::table('pengguna')
-            ->where('role', 'penumpang')
+        $data = DB::table('order as o')
+            ->join('order_assignment as oa', 'o.order_id', '=', 'oa.order_id')
+            ->select(
+                'o.order_id',
+                'o.pengguna_id',
+                'oa.sopir_id'
+            )
             ->get();
 
         $dataReview = [];
 
-        foreach ($sopir as $s) {
-            for ($i = 0; $i < 3; $i++) {
-                // Pilih penumpang secara acak
-                $randomPenumpang = $penumpang->random();
+        foreach ($data as $row) {
 
-                $dataReview[] = [
-                    'tanggal'     => $now,
-                    'review'      => rand(1, 5),
-                    'sopir_id'    => $s->pengguna_id,
-                    'pengguna_id' => $randomPenumpang->pengguna_id,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
-                ];
+            // Cegah duplicate review
+            $exists = DB::table('review_sopir')
+                ->where('order_id', $row->order_id)
+                ->exists();
+
+            if ($exists) {
+                continue;
             }
+
+            $dataReview[] = [
+                'tanggal'     => $now,
+                'review'      => rand(3, 5),
+                'sopir_id'    => $row->sopir_id,
+                'pengguna_id' => $row->pengguna_id,
+                'order_id'    => $row->order_id,
+                'created_at'  => $now,
+                'updated_at'  => $now,
+            ];
         }
 
         DB::table('review_sopir')->insert($dataReview);

@@ -44,7 +44,7 @@ class PenumpangController extends Controller
         }
 
         // Query orders milik user yang login
-        $query = Order::with(['penumpang', 'assignment.sopir', 'assignment.mobil'])
+        $query = Order::with(['penumpang', 'assignment.sopir', 'assignment.mobil', 'review'])
             ->where('pengguna_id', $user->pengguna_id);
 
         // Filter berdasarkan status jika ada
