@@ -1,0 +1,23 @@
+{
+    "name": "SIKAR - Sistem Informasi Kendaraan",
+    "short_name": "SIKAR",
+    "start_url": "/index.php",
+    "background_color": "#FDECEC",
+    "description": "Sistem Informasi Kendaraan",
+    "display": "standalone",
+    "theme_color": "#D32F2F",
+    "icons": [
+        {
+            "src": "images/logo_pge_512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "images/logo_pge_192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

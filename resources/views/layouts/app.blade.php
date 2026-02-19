@@ -20,6 +20,10 @@ tailwind.config = {
   }
 }
 </script>
+<!-- PWA  -->
+<meta name="theme-color" content="#D32F2F"/>
+<link rel="apple-touch-icon" href="{{ asset('images/logo_pge.png') }}">
+<link rel="manifest" href="{{ asset('/manifest.json') }}">
 @stack('styles')
 </head>
 
@@ -98,6 +102,18 @@ if ($user) {
             {{ $menu['label'] }}
           </a>
         @endforeach
+
+        {{-- Tombol Instal Aplikasi - Desktop --}}
+        <button
+          id="installBtnDesktop"
+          onclick="triggerInstall()"
+          class="hidden py-3 border-b-2 border-transparent text-gray-600 hover:text-pertamina items-center gap-1.5 transition-colors"
+          title="Instal SIKAR ke perangkat Anda">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 3v13m0 0l-4-4m4 4l4-4"/>
+          </svg>
+          Instal
+        </button>
       </nav>
     </div>
   </div>
@@ -111,7 +127,23 @@ if ($user) {
         {{ $menu['label'] }}
       </a>
     @endforeach
+
+    {{-- Tombol Instal Aplikasi - Mobile --}}
+    <button
+      id="installBtnMobile"
+      onclick="triggerInstall()"
+      class="hidden py-3 border-b text-left text-gray-700 hover:text-pertamina items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 3v13m0 0l-4-4m4 4l4-4"/>
+      </svg>
+      Instal
+    </button>
   </nav>
+</div>
+
+<!-- ================= TOAST NOTIFIKASI ================= -->
+<div id="installToast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg transition-all">
+  <span id="installToastMsg"></span>
 </div>
 
 <!-- ================= MAIN CONTENT ================= -->
@@ -123,9 +155,10 @@ if ($user) {
 
 <!-- ================= SCRIPT ================= -->
 <script>
+// ---- UI Toggles ----
 function toggleMenu() {
   document.getElementById('mobileMenu').classList.toggle('hidden');
-  document.getElementById('profileDropdown').classList.add('hidden')
+  document.getElementById('profileDropdown').classList.add('hidden');
 }
 
 function toggleProfile() {
@@ -141,7 +174,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Logout
+// ---- Logout ----
 async function logout() {
   const token = document.querySelector('meta[name="csrf-token"]').content;
   try {
@@ -156,6 +189,91 @@ async function logout() {
   } catch (e) {}
   window.location.href = "/";
 }
+
+// ---- PWA Install ----
+let deferredPrompt = null;
+
+function showInstallButtons() {
+  const desktop = document.getElementById('installBtnDesktop');
+  const mobile  = document.getElementById('installBtnMobile');
+  if (desktop) desktop.classList.remove('hidden');
+  if (mobile)  mobile.classList.remove('hidden');
+  // Tambahkan flex agar icon dan teks sejajar
+  if (desktop) desktop.classList.add('flex');
+  if (mobile)  mobile.classList.add('flex');
+}
+
+function hideInstallButtons() {
+  const desktop = document.getElementById('installBtnDesktop');
+  const mobile  = document.getElementById('installBtnMobile');
+  if (desktop) desktop.classList.add('hidden');
+  if (mobile)  mobile.classList.add('hidden');
+}
+
+function showToast(msg, duration = 3000) {
+  const toast = document.getElementById('installToast');
+  document.getElementById('installToastMsg').textContent = msg;
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), duration);
+}
+
+// Tangkap event beforeinstallprompt
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallButtons();
+});
+
+// Sembunyikan tombol jika sudah terinstal
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  hideInstallButtons();
+});
+
+// Cek apakah sudah berjalan sebagai PWA (standalone)
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+  hideInstallButtons();
+}
+
+async function triggerInstall() {
+  if (!deferredPrompt) {
+    // Browser tidak support atau sudah terinstal
+    showToast('Aplikasi sudah terinstal atau browser Anda tidak mendukung instalasi langsung.');
+    return;
+  }
+
+  // Tutup menu mobile jika terbuka
+  document.getElementById('mobileMenu').classList.add('hidden');
+
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === 'accepted') {
+    showToast('Menginstal...');
+  } else {
+    showToast('Instalasi dibatalkan');
+  }
+
+  deferredPrompt = null;
+  hideInstallButtons();
+}
+</script>
+
+<!-- PWA Service Worker -->
+<script src="{{ asset('/sw.js') }}"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then(
+      (registration) => {
+        console.log("Service worker registration succeeded:", registration);
+      },
+      (error) => {
+        console.error(`Service worker registration failed: ${error}`);
+      }
+    );
+  } else {
+    console.error("Service workers are not supported.");
+  }
 </script>
 @stack('scripts')
 </body>
