@@ -72,12 +72,12 @@ class Order extends Model
 
     public function scopeRiwayatPenumpang($query)
     {
-        return $query->whereIn('status', [self::STATUS_CONFIRMED, self::STATUS_COMPLETED, self::STATUS_CANCELED, self::STATUS_REJECTED]);
+        return $query->whereIn('status', [self::STATUS_CONFIRMED, self::STATUS_CANCELED, self::STATUS_REJECTED]);
     }
 
     public function scopeRiwayatSopir($query)
     {
-        return $query->whereIn('status', [self::STATUS_CONFIRMED, self::STATUS_COMPLETED]);
+        return $query->whereIn('status', [self::STATUS_CONFIRMED]);
     }
 
     public function scopeRiwayatKepalaSopir($query)
@@ -86,7 +86,6 @@ class Order extends Model
             self::STATUS_ASSIGNED,
             self::STATUS_ON_PROCESS,
             self::STATUS_CONFIRMED,
-            self::STATUS_COMPLETED,
             self::STATUS_CANCELED,
             self::STATUS_REJECTED,
             ]);

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 use App\Models\Order;
+use App\Models\Mobil;
+use App\Models\Sopir;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -146,6 +148,8 @@ class FormController extends Controller
             $user = $request->auth_user;
             
             $order = Order::lockForUpdate()->findOrFail($id);
+            $sopir = Sopir::lockForUpdate()->findOrFail($id);
+            $mobil = Mobil::lockForUpdate()->findOrFail($id);
             
             // Hanya bisa confirm order sendiri
             if ($order->pengguna_id !== $user->pengguna_id) {
@@ -157,10 +161,19 @@ class FormController extends Controller
                 throw new Exception('Order hanya bisa dikonfirmasi saat status on-process. Status saat ini: ' . $order->status);
             }
             
-            // Update status order menjadi canceled
+            // Update status order menjadi confirmed
             $order->status = Order::STATUS_CONFIRMED;
             $order->updated_at = Carbon::now();
             $order->save();
+
+            // Tambah jumlah order completed
+            $sopir->increment('order_completed');
+
+            // Reset ketersediaan sopir
+            $sopir->update(['order_ongoing' => 0]);
+            
+            // Reset ketersediaan mobil
+            $mobil->update(['availability' => 1]);
             
             DB::commit();
             
