@@ -292,6 +292,52 @@ class KepalaSopirController extends Controller
             ], 500);
         }
     }
+        public function confirmOrder(Request $request, $id)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = $request->auth_user;
+            
+            $order = Order::lockForUpdate()->findOrFail($id);
+            $sopir = Sopir::lockForUpdate()->findOrFail($id);
+            $mobil = Mobil::lockForUpdate()->findOrFail($id);
+            
+            // Hanya bisa confirm jika status on-process
+            if (!in_array($order->status, [Order::STATUS_ON_PROCESS])) {
+                throw new Exception('Order hanya bisa dikonfirmasi saat status on-process. Status saat ini: ' . $order->status);
+            }
+            
+            // Update status order menjadi confirmed
+            $order->status = Order::STATUS_CONFIRMED;
+            $order->updated_at = Carbon::now();
+            $order->save();
+
+            // Tambah jumlah order completed
+            $sopir->increment('order_completed');
+
+            // Reset ketersediaan sopir
+            $sopir->update(['order_ongoing' => 0]);
+            
+            // Reset ketersediaan mobil
+            $mobil->update(['availability' => 1]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'status' => true,
+                'message' => 'Order berhasil dikonfirmasi'
+            ]);
+            
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal mengkonfirmasi order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Export Excel dengan parameter filter

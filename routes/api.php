@@ -64,7 +64,6 @@ Route::middleware(['auth.token:sopir'])->group(function () {
     // Leaderboard
     Route::get('/sopir/leaderboard', [SopirController::class, 'getLeaderboard']);
     Route::post('/sopir/start/{id}', [SopirController::class, 'startOrder']);
-    Route::post('/sopir/complete/{id}', [SopirController::class, 'completeOrder']);
 });
 
 // ============================================
@@ -81,6 +80,7 @@ Route::middleware(['auth.token:kepala_sopir'])->group(function () {
     Route::get('/kepalasopir/sopir', [KepalaSopirController::class, 'getSopir']);
     Route::get('/kepalasopir/sopirmasuk', [KepalaSopirController::class, 'getSopirMasukKerja']);
     Route::post('/kepalasopir/assign', [KepalaSopirController::class, 'assignOrder']);
+    Route::post('/kepalasopir/confirm/{id}', [KepalaSopirController::class, 'confirmOrder']);
     Route::delete('/kepalasopir/reject/{id}', [KepalaSopirController::class, 'rejectOrder']);
     Route::get('/kepalasopir/export-presensi-sopir', [KepalaSopirController::class, 'exportPresensiSopir'])
         ->name('kepalasopir.export.presensi.driver');
