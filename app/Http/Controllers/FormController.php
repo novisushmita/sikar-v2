@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use Exception;
+use App\Services\FcmService;
+use App\Models\Pengguna;
+use Illuminate\Support\Facades\Log;
 
 
 class FormController extends Controller
@@ -77,6 +80,23 @@ class FormController extends Controller
             $order->load('penumpang');
             
             DB::commit();
+
+            try {
+                $tokens = Pengguna::where('role', Pengguna::ROLE_KEPALA_SOPIR)
+                    ->whereNotNull('web_token')
+                    ->pluck('web_token')
+                    ->toArray();
+
+                if (!empty($tokens)) {
+                    (new FcmService())->kirimKeBanyak(
+                        $tokens,
+                        'Ada Orderan Baru!',
+                        $user->name . ' memesan. Segera assign sopir!'
+                    );
+                }
+             } catch (Exception $fcmError) {
+                Log::error('FCM Error: ' . $fcmError->getMessage());
+            }
             
             return response()->json([
                 'status' => true,
@@ -84,7 +104,7 @@ class FormController extends Controller
                 'data' => $order,
             ], 201);
             
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             
             return response()->json([
@@ -147,10 +167,9 @@ class FormController extends Controller
         try {
             $user = $request->auth_user;
             
-            $order = Order::lockForUpdate()->findOrFail($id);
-            $sopir = Sopir::lockForUpdate()->findOrFail($id);
-            $mobil = Mobil::lockForUpdate()->findOrFail($id);
-            
+            $order = Order::with('assignment')->lockForUpdate()->findOrFail($id);
+            $sopir = Sopir::lockForUpdate()->findOrFail($order->assignment->sopir_id);
+            $mobil = Mobil::lockForUpdate()->findOrFail($order->assignment->mobil_id);
             // Hanya bisa confirm order sendiri
             if ($order->pengguna_id !== $user->pengguna_id) {
                 throw new Exception('Anda tidak memiliki akses ke order ini');
