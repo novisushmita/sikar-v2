@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(() => {
         loadCars();
         loadDrivers();
-    }, 300000);
+    }, 10000);
 });
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;

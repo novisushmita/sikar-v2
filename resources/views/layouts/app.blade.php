@@ -155,6 +155,33 @@ if ($user) {
 
 <!-- ================= SCRIPT ================= -->
 <script>
+
+// ✅ Token dari localStorage untuk PWA
+const sikarToken = localStorage.getItem('sikar_token');
+const currentPath = window.location.pathname;
+const isProtectedPage = currentPath.startsWith('/penumpang') ||
+                        currentPath.startsWith('/sopir/') ||
+                        currentPath.startsWith('/kepalasopir');
+
+
+if (sikarToken) {
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        if (typeof url === 'string' && url.startsWith('/api')) {
+            const separator = url.includes('?') ? '&' : '?';
+            url = url + separator + 'token=' + sikarToken;
+        }
+        return originalFetch(url, options).then(response => {
+            // ✅ Kalau 401, hapus localStorage dan redirect ke login
+            if (response.status === 401) {
+                localStorage.removeItem('sikar_token');
+                localStorage.removeItem('sikar_role');
+                window.location.href = '/';
+            }
+            return response;
+        });
+    };
+}
 // ---- UI Toggles ----
 function toggleMenu() {
   document.getElementById('mobileMenu').classList.toggle('hidden');
@@ -186,28 +213,33 @@ async function logout() {
       },
       credentials: "same-origin"
     });
-  } catch (e) {}
+} catch (e) {}
+  // Hapus token dari localStorage saat logout
+  localStorage.removeItem('sikar_token');
+  localStorage.removeItem('sikar_role');
   window.location.href = "/";
 }
 
 // ---- PWA Install ----
 let deferredPrompt = null;
 
+// Ganti fungsi ini
 function showInstallButtons() {
   const desktop = document.getElementById('installBtnDesktop');
   const mobile  = document.getElementById('installBtnMobile');
-  if (desktop) desktop.classList.remove('hidden');
-  if (mobile)  mobile.classList.remove('hidden');
-  // Tambahkan flex agar icon dan teks sejajar
-  if (desktop) desktop.classList.add('flex');
-  if (mobile)  mobile.classList.add('flex');
+  if (desktop) {
+    desktop.style.display = 'flex';
+  }
+  if (mobile) {
+    mobile.style.display = 'flex';  // ← pakai inline style, bukan classList
+  }
 }
 
 function hideInstallButtons() {
   const desktop = document.getElementById('installBtnDesktop');
   const mobile  = document.getElementById('installBtnMobile');
-  if (desktop) desktop.classList.add('hidden');
-  if (mobile)  mobile.classList.add('hidden');
+  if (desktop) desktop.style.display = 'none';
+  if (mobile)  mobile.style.display  = 'none';
 }
 
 function showToast(msg, duration = 3000) {
@@ -257,9 +289,18 @@ async function triggerInstall() {
   deferredPrompt = null;
   hideInstallButtons();
 }
+
+window.addEventListener('load', () => {
+    if (!window.matchMedia('(display-mode: standalone)').matches) {
+        if (deferredPrompt) {
+            showInstallButtons();
+        }
+    }
+});
+
 </script>
 
-<!-- PWA Service Worker -->
+{{-- <!-- PWA Service Worker -->
 <script src="{{ asset('/sw.js') }}"></script>
 <script>
   if ("serviceWorker" in navigator) {
@@ -274,7 +315,8 @@ async function triggerInstall() {
   } else {
     console.error("Service workers are not supported.");
   }
-</script>
+</script> --}}
+@vite(['resources/js/app.js'])
 @stack('scripts')
 </body>
 </html>

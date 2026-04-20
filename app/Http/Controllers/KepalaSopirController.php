@@ -17,7 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
-
+use App\Models\Pengguna;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class KepalaSopirController extends Controller
@@ -215,6 +216,37 @@ class KepalaSopirController extends Controller
             $assignment->load(['order.penumpang', 'sopir', 'mobil']);
 
             DB::commit();
+
+try {
+    // Notif ke sopir
+    $sopirPengguna = Pengguna::where('pengguna_id', $request->sopir_id)
+        ->whereNotNull('web_token')
+        ->first();
+
+    if ($sopirPengguna) {
+        (new \App\Services\FcmService())->kirim(
+            $sopirPengguna->web_token,
+            'Kamu Dapat Orderan!',
+            'Kepala sopir telah menugaskan kamu. Cek segera!'
+        );
+    }
+
+    // Notif ke penumpang
+    $penumpangPengguna = Pengguna::where('pengguna_id', $order->pengguna_id)
+        ->whereNotNull('web_token')
+        ->first();
+
+    if ($penumpangPengguna) {
+        (new \App\Services\FcmService())->kirim(
+            $penumpangPengguna->web_token,
+            'Orderan Kamu Diproses!',
+            'Sopir sudah ditugaskan. Pantau status orderanmu!'
+        );
+    }
+} catch (Exception $fcmError) {
+    Log::error('FCM Error: ' . $fcmError->getMessage());
+}
+                            
             return response()->json([
                 'status' => true,
                 'message' => 'Order berhasil di-assign ke sopir dan mobil',
@@ -279,10 +311,26 @@ class KepalaSopirController extends Controller
             $order->save();
 
             DB::commit();
-            return response()->json([
-                'status' => true,
-                'message' => 'Order berhasil di-reject'
-            ]);
+try {
+    $penumpangPengguna = Pengguna::where('pengguna_id', $order->pengguna_id)
+        ->whereNotNull('web_token')
+        ->first();
+
+    if ($penumpangPengguna) {
+        (new \App\Services\FcmService())->kirim(
+            $penumpangPengguna->web_token,
+            'Orderan Dibatalkan',
+            'Maaf, orderanmu dibatalkan oleh kepala sopir. Silakan buat order baru.'
+        );
+    }
+} catch (Exception $fcmError) {
+    Log::error('FCM Error: ' . $fcmError->getMessage());
+}
+
+return response()->json([
+    'status' => true,
+    'message' => 'Order berhasil di-reject'
+]);
         } catch (Exception $e) {
             DB::rollBack();
 
@@ -299,10 +347,10 @@ class KepalaSopirController extends Controller
         try {
             $user = $request->auth_user;
             
-            $order = Order::lockForUpdate()->findOrFail($id);
-            $sopir = Sopir::lockForUpdate()->findOrFail($id);
-            $mobil = Mobil::lockForUpdate()->findOrFail($id);
-            
+            $order = Order::with('assignment')->lockForUpdate()->findOrFail($id);
+            $sopir = Sopir::lockForUpdate()->findOrFail($order->assignment->sopir_id);  // ← ambil dari assignment
+            $mobil = Mobil::lockForUpdate()->findOrFail($order->assignment->mobil_id);  // ← ambil dari assignment
+
             // Hanya bisa confirm jika status on-process
             if (!in_array($order->status, [Order::STATUS_ON_PROCESS])) {
                 throw new Exception('Order hanya bisa dikonfirmasi saat status on-process. Status saat ini: ' . $order->status);

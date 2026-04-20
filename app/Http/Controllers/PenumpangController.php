@@ -114,6 +114,8 @@ class PenumpangController extends Controller
                 'review' => 'required|integer|max:5',
                 'tanggal' => 'required|date',
                 'sopir_id' => 'required|exists:sopir,sopir_id',
+                'order_id' => 'required|exists:order,order_id',
+
             ], [
                 'review.required' => 'Review wajib diisi',
                 'review.max' => 'Review maksimal 5 bintang',
@@ -140,6 +142,8 @@ class PenumpangController extends Controller
                 'review' => $validated['review'],
                 'tanggal' => $validated['tanggal'],
                 'sopir_id' => $validated['sopir_id'],
+                'order_id' => $validated['order_id'],
+
             ]);
 
             DB::commit();

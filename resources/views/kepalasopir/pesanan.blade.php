@@ -4,24 +4,6 @@
 
 @section('content')
 
-<!-- ================= TOAST NOTIFICATION (Z-INDEX LEBIH TINGGI) ================= -->
-<div id="toast" class="fixed top-4 right-4 z-[60] transform translate-x-[400px] transition-all duration-300 ease-out">
-  <div class="toast-container bg-white rounded-lg shadow-xl border-l-4 p-4 min-w-[300px] max-w-md">
-    <div class="flex items-start gap-3">
-      <div id="toastIcon" class="flex-shrink-0 w-6 h-6"></div>
-      <div class="flex-1">
-        <p id="toastTitle" class="font-semibold text-gray-900 mb-1"></p>
-        <p id="toastMessage" class="text-sm text-gray-600"></p>
-      </div>
-      <button onclick="closeToast()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- ================= CONTENT ================= -->
 <div class="max-w-6xl space-y-6 md:space-y-8">
 
@@ -32,9 +14,6 @@
     <div class="mb-6 pb-4 border-b border-gray-200">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-base md:text-lg font-semibold text-gray-800">Status Pesanan</h3>
-        <span id="orderCount" class="px-3 py-1.5 bg-gray-100 rounded-full text-xs font-semibold text-gray-600">
-          0 Pesanan
-        </span>
       </div>
       
       <div class="flex gap-3">
@@ -42,13 +21,15 @@
           id="btnPending"
           class="filter-btn flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all
                  bg-pertamina text-white shadow-sm">
-          Pending
+          Menunggu
+          <span id="countPending" class="ml-1.5 bg-white/30 text-white text-xs px-1.5 py-0.5 rounded-full">0</span>
         </button>
         <button onclick="filterByStatus('assigned', this)" 
           id="btnAssigned"
           class="filter-btn flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all
-                 bg-white border border-gray-300 text-gray-700 hover:bg-red-0">
-          Ditugaskan
+                 bg-white border border-gray-300 text-gray-700">
+          Diproses
+          <span id="countAssigned" class="ml-1.5 bg-gray-200 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">0</span>
         </button>
       </div>
     </div>
@@ -199,7 +180,7 @@
 <div id="rejectModal"
   class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm px-4">
 
-  <div class="bg-white rounded-2xl w-[90%] max-w-sm shadow-2xl">
+  <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
     <div class="p-6">
       <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,6 +211,43 @@
     </div>
   </div>
 </div>
+
+<!-- ================= MODAL KONFIRMASI SELESAI ================= -->
+<div id="confirmOrderModal"
+  class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm px-4">
+
+  <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+    <div class="p-6">
+      <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+
+      <h2 class="text-xl font-bold text-gray-900 text-center mb-2">Konfirmasi Selesai?</h2>
+      <p class="text-sm text-gray-600 text-center mb-6">
+        Tandai pesanan ini sebagai selesai. Sopir dan mobil akan dibebaskan kembali.
+      </p>
+
+      <div class="flex gap-3">
+        <button onclick="closeConfirmOrderModal()"
+          class="flex-1 border-2 border-gray-300 rounded-xl py-2.5 font-semibold text-gray-700
+                 hover:bg-gray-50 transition">
+          Batal
+        </button>
+        <button onclick="doConfirmOrder()"
+          id="btnDoConfirm"
+          class="flex-1 bg-blue-600 text-white rounded-xl py-2.5 font-semibold
+                 hover:bg-blue-700 transition shadow-sm
+                 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span id="btnConfirmOrderText">Ya, Selesaikan</span>
+          <span id="btnConfirmOrderLoader" class="hidden">Memproses...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -245,8 +263,6 @@
   let currentOrders = [];
   let availableSopirs = [];
   let availableMobils = [];
-  let allSopirs = [];
-  let allMobils = [];
   let currentFilter = 'pending';
   let selectedOrderId = null;
   let autoRefreshInterval = null;
@@ -254,53 +270,55 @@
   /* ===============================
      TOAST NOTIFICATION
   ================================ */
-  function showToast(title, message, type = 'success') {
-    const toast = document.getElementById('toast');
-    const toastIcon = document.getElementById('toastIcon');
-    const toastTitle = document.getElementById('toastTitle');
-    const toastMessage = document.getElementById('toastMessage');
-    const toastContainer = toast.querySelector('.toast-container');
-    
-    toastContainer.className = 'toast-container bg-white rounded-lg shadow-xl border-l-4 p-4 min-w-[300px] max-w-md';
-    
-    if (type === 'success') {
-      toastContainer.classList.add('border-green-500');
-      toastIcon.innerHTML = `
-        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-      `;
-    } else if (type === 'error') {
-      toastContainer.classList.add('border-red-500');
-      toastIcon.innerHTML = `
-        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      `;
-    } else if (type === 'warning') {
-      toastContainer.classList.add('border-yellow-500');
-      toastIcon.innerHTML = `
-        <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-        </svg>
-      `;
-    }
-    
-    toastTitle.textContent = title;
-    toastMessage.textContent = message;
-    
-    toast.style.transform = 'translateX(0)';
-    
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+
+    const bgColor = type === 'success'
+      ? 'bg-green-500'
+      : type === 'error'
+        ? 'bg-red-500'
+        : 'bg-blue-500';
+
+    const icon = type === 'success'
+      ? `<svg class="w-5 h-5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+         </svg>`
+      : type === 'error'
+        ? `<svg class="w-5 h-5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+           </svg>`
+        : `<svg class="w-5 h-5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+           </svg>`;
+
+    notification.className = [
+      'fixed top-4 right-4 z-[60]',
+      'flex items-center gap-3',
+      'px-4 py-3 rounded-xl shadow-lg',
+      'text-white font-medium text-sm',
+      'transform transition-all duration-300 translate-x-[calc(100%+1rem)]',
+      'max-w-xs w-auto',
+      bgColor
+    ].join(' ');
+
+    notification.innerHTML = `${icon}<span>${message}</span>`;
+    document.body.appendChild(notification);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        notification.classList.remove('translate-x-[calc(100%+1rem)]');
+        notification.classList.add('translate-x-0');
+      });
+    });
+
     setTimeout(() => {
-      closeToast();
-    }, 4000);
+      notification.classList.remove('translate-x-0');
+      notification.classList.add('translate-x-[calc(100%+1rem)]');
+      setTimeout(() => {
+        if (document.body.contains(notification)) document.body.removeChild(notification);
+      }, 300);
+    }, 3500);
   }
-  
-  function closeToast() {
-    const toast = document.getElementById('toast');
-    toast.style.transform = 'translateX(400px)';
-  }
-  window.closeToast = closeToast;
 
   /* ===============================
      UTILITY FUNCTIONS
@@ -313,59 +331,32 @@
     return `${tanggal} ${jam}`;
   }
 
+  function cleanPhone(phone) {
+    if (!phone) return '';
+    let p = phone.replace(/[^0-9]/g, '');
+    if (p.startsWith('0')) p = '62' + p.substring(1);
+    return p;
+  }
+
   function getStatusConfig(status) {
     const configs = {
-      'pending': {
-        label: 'Menunggu Persetujuan',
-        bgColor: 'bg-yellow-50',
-        textColor: 'text-yellow-700',
-        borderColor: 'border-yellow-200'
-      },
-      'assigned': {
-        label: 'Ditugaskan',
-        bgColor: 'bg-purple-50',
-        textColor: 'text-purple-700',
-        borderColor: 'border-purple-200'
-      },
-      'on-process': {
-        label: 'Dalam Perjalanan',
-        bgColor: 'bg-blue-50',
-        textColor: 'text-blue-700',
-        borderColor: 'border-blue-200'
-      },
-      'confirmed': {
-        label: 'Dikonfirmasi',
-        bgColor: 'bg-green-50',
-        textColor: 'text-green-700',
-        borderColor: 'border-green-200'
-      },
-      'completed': {
-        label: 'Selesai',
-        bgColor: 'bg-green-50',
-        textColor: 'text-green-700',
-        borderColor: 'border-green-200'
-      },
-      'canceled': {
-        label: 'Dibatalkan',
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-700',
-        borderColor: 'border-red-200'
-      },
-      'rejected': {
-        label: 'Ditolak',
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-700',
-        borderColor: 'border-red-200'
-      }
+      'pending':    { label: 'Menunggu Persetujuan', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700', borderColor: 'border-yellow-200' },
+      'assigned':   { label: 'Ditugaskan',           bgColor: 'bg-purple-50', textColor: 'text-purple-700', borderColor: 'border-purple-200' },
+      'on-process': { label: 'Dalam Perjalanan',     bgColor: 'bg-blue-50',   textColor: 'text-blue-700',   borderColor: 'border-blue-200'   },
+      'confirmed':  { label: 'Dikonfirmasi',          bgColor: 'bg-green-50',  textColor: 'text-green-700',  borderColor: 'border-green-200'  },
+      'completed':  { label: 'Selesai',               bgColor: 'bg-green-50',  textColor: 'text-green-700',  borderColor: 'border-green-200'  },
+      'canceled':   { label: 'Dibatalkan',            bgColor: 'bg-red-50',    textColor: 'text-red-700',    borderColor: 'border-red-200'    },
+      'rejected':   { label: 'Ditolak',               bgColor: 'bg-red-50',    textColor: 'text-red-700',    borderColor: 'border-red-200'    },
     };
-    
-    return configs[status] || {
-      label: status,
-      bgColor: 'bg-gray-50',
-      textColor: 'text-gray-700',
-      borderColor: 'border-gray-200'
-    };
+    return configs[status] || { label: status, bgColor: 'bg-gray-50', textColor: 'text-gray-700', borderColor: 'border-gray-200' };
   }
+
+  /* ===============================
+     WA SVG
+  ================================ */
+  const waSvg = `<svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+  </svg>`;
 
   /* ===============================
      FETCH DATA
@@ -374,7 +365,8 @@
     showLoading(true);
     
     try {
-      const url = `${API_BASE}/kepalasopir/order?status=${status}&token=${API_TOKEN}`;
+      const queryStatus = status === 'assigned' ? 'all' : status;
+      const url = `${API_BASE}/kepalasopir/order?status=${queryStatus}&token=${API_TOKEN}`;
       console.log('🔍 Fetching URL:', url);
       
       const response = await fetch(url);
@@ -390,15 +382,19 @@
       console.log('📦 Full Response:', result);
       
       if (result.status) {
-        currentOrders = result.data || [];
+        let orders = result.data || [];
+
+        if (status === 'assigned') {
+          orders = orders.filter(o => ['assigned', 'on-process'].includes(o.status));
+        }
+
+        currentOrders = orders;
         console.log('✅ Orders loaded:', currentOrders.length, 'orders');
-        
-        document.getElementById('orderCount').textContent = `${currentOrders.length} Pesanan`;
         
         renderOrders(currentOrders);
       } else {
         console.error('❌ API returned false status');
-        showToast('Gagal Memuat Data', result.message || 'Terjadi kesalahan', 'error');
+        showNotification(result.message || 'Terjadi kesalahan', 'error');
         renderOrders([]);
       }
       
@@ -410,57 +406,65 @@
     }
   }
 
-async function loadSopirs() {
+  // ✅ Satu-satunya fungsi yang update count — tidak ada yang lain
+async function loadAllCounts() {
     try {
-        console.log('🔍 Loading sopirs...');
-        const response = await fetch(`${API_BASE}/kepalasopir/sopir?token=${API_TOKEN}`);
-        const result = await response.json();
-        
-        console.log('📦 Sopir Response:', result);
-        
-        if (result.status) {
-            // ✅ Langsung pakai data dari API
-            availableSopirs = result.data || [];
-            console.log('✅ Available sopirs:', availableSopirs.length);
-            
-            populateSopirSelect();
-        }
-    } catch (error) {
-        console.error('❌ Error loading sopirs:', error);
-        showToast('Gagal Memuat Sopir', 'Tidak dapat memuat data sopir', 'error');
+      const [resPending, resAll] = await Promise.all([
+        fetch(`${API_BASE}/kepalasopir/order?status=pending&token=${API_TOKEN}`),
+        fetch(`${API_BASE}/kepalasopir/order?status=all&token=${API_TOKEN}`)
+      ]);
+
+      const dataPending = await resPending.json();
+      const dataAll = await resAll.json();
+
+      if (dataPending.status) {
+        document.getElementById('countPending').textContent = dataPending.count || 0;
+      }
+      if (dataAll.status) {
+        const diproses = (dataAll.data || []).filter(o => ['assigned', 'on-process'].includes(o.status));
+        document.getElementById('countAssigned').textContent = diproses.length;
+      }
+    } catch (e) {
+      console.error('Error loading counts:', e);
     }
 }
 
-async function loadMobils() {
+  async function loadSopirs() {
     try {
-        console.log('🔍 Loading mobils...');
-        const response = await fetch(`${API_BASE}/kepalasopir/mobil?token=${API_TOKEN}`);
-        const result = await response.json();
-        
-        console.log('📦 Mobil Response:', result);
-        
-        if (result.status) {
-            // ✅ Langsung pakai data dari API
-            availableMobils = result.data || [];
-            console.log('✅ Available mobils:', availableMobils.length);
-            
-            populateMobilSelect();
-        }
+      const response = await fetch(`${API_BASE}/kepalasopir/sopir?token=${API_TOKEN}`);
+      const result = await response.json();
+      if (result.status) {
+        availableSopirs = result.data || [];
+        populateSopirSelect();
+      }
     } catch (error) {
-        console.error('❌ Error loading mobils:', error);
-        showToast('Gagal Memuat Mobil', 'Tidak dapat memuat data mobil', 'error');
+      console.error('❌ Error loading sopirs:', error);
+      showNotification('Tidak dapat memuat data sopir', 'error');
     }
-}
+  }
+
+  async function loadMobils() {
+    try {
+      const response = await fetch(`${API_BASE}/kepalasopir/mobil?token=${API_TOKEN}`);
+      const result = await response.json();
+      if (result.status) {
+        availableMobils = result.data || [];
+        populateMobilSelect();
+      }
+    } catch (error) {
+      console.error('❌ Error loading mobils:', error);
+      showNotification('Tidak dapat memuat data mobil', 'error');
+    }
+  }
+
   /* ===============================
      RENDER FUNCTIONS
   ================================ */
   function renderOrders(orders) {
-    const container = document.getElementById('ordersContainer');
+    const container  = document.getElementById('ordersContainer');
     const emptyState = document.getElementById('emptyState');
-    const emptyStatusText = document.getElementById('emptyStatusText');
     
     console.log('🎨 Rendering', orders.length, 'orders');
-    
     
     if (!orders || orders.length === 0) {
       container.innerHTML = '';
@@ -473,19 +477,41 @@ async function loadMobils() {
     container.classList.remove('hidden');
     
     container.innerHTML = orders.map(order => {
-      const isPending = order.status === 'pending';
+      const isPending   = order.status === 'pending';
+      const isOnProcess = order.status === 'on-process';
       const statusConfig = getStatusConfig(order.status);
       
-      let penumpangName = order.penumpang?.name || '-';
-      const penumpangNomor = order.penumpang?.nomor || null;
-      
-      const sopirName = order.assignment?.sopir?.name || order.assignment?.sopir?.nama || 'Belum ditugaskan';
-      const sopirNomor = order.assignment?.sopir?.nomor || null;
-      const mobilDesc = order.assignment?.mobil?.deskripsi || 'Belum ditugaskan';
+      const penumpangName  = order.penumpang?.name  || '-';
+      const penumpangNomor = cleanPhone(order.penumpang?.nomor || '');
+      const sopirName      = order.assignment?.sopir?.name || order.assignment?.sopir?.nama || 'Belum ditugaskan';
+      const sopirNomor     = cleanPhone(order.assignment?.sopir?.nomor || '');
+      const mobilDesc      = order.assignment?.mobil?.deskripsi || 'Belum ditugaskan';
       
       const waktuPenjemputan = new Date(order.waktu_penjemputan);
       const tanggal = waktuPenjemputan.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-      const waktu = waktuPenjemputan.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      const waktu   = waktuPenjemputan.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+      const waButtons = (penumpangNomor || sopirNomor) ? `
+        <div class="flex gap-2 mt-2">
+          ${sopirNomor ? `
+          <a href="https://wa.me/${sopirNomor}?text=Halo%20${encodeURIComponent(sopirName)},%20ini%20tentang%20order%20%23${order.order_id}."
+             target="_blank"
+             class="flex-1 flex items-center justify-center gap-1.5
+                    bg-green-500 hover:bg-green-600 text-white
+                    font-semibold text-xs py-2.5 rounded-lg
+                    transition-all shadow-sm hover:shadow-md">
+            ${waSvg} Sopir
+          </a>` : ''}
+          ${penumpangNomor ? `
+          <a href="https://wa.me/${penumpangNomor}?text=Halo%20${encodeURIComponent(penumpangName)},%20saya%20dari%20tim%20SIKAR."
+             target="_blank"
+             class="flex-1 flex items-center justify-center gap-1.5
+                    bg-green-500 hover:bg-green-600 text-white
+                    font-semibold text-xs py-2.5 rounded-lg
+                    transition-all shadow-sm hover:shadow-md">
+            ${waSvg} Penumpang
+          </a>` : ''}
+        </div>` : '';
       
       return `
         <div class="border border-gray-200 rounded-lg md:rounded-xl p-4 md:p-5 transition-all">
@@ -504,12 +530,11 @@ async function loadMobils() {
               </p>
               <p class="font-semibold text-gray-800 text-sm md:text-base">${penumpangName}</p>
             </div>
-
-          <span class="inline-flex items-center text-xs px-3 py-1 rounded-full 
-            font-semibold whitespace-nowrap
-            ${statusConfig.bgColor} ${statusConfig.textColor} border ${statusConfig.borderColor}">
-            ${statusConfig.label}
-          </span>
+            <span class="inline-flex items-center text-xs px-3 py-1 rounded-full 
+              font-semibold whitespace-nowrap
+              ${statusConfig.bgColor} ${statusConfig.textColor} border ${statusConfig.borderColor}">
+              ${statusConfig.label}
+            </span>
           </div>
 
           <!-- Route -->
@@ -519,7 +544,6 @@ async function loadMobils() {
               <div class="flex-1 w-0.5 bg-gray-300 my-2 min-h-[40px]"></div>
               <span class="w-2.5 h-2.5 bg-gray-400 rounded-full"></span>
             </div>
-
             <div class="flex-1 space-y-3">
               <div>
                 <p class="text-xs font-semibold text-gray-700 mb-1">Tempat Penjemputan</p>
@@ -528,7 +552,6 @@ async function loadMobils() {
                   <span class="font-medium">${tanggal} • ${waktu}</span>
                 </p>
               </div>
-
               <div>
                 <p class="text-xs font-semibold text-gray-700 mb-1">Tempat Tujuan</p>
                 <p class="text-xs md:text-sm text-gray-600">${order.tempat_tujuan}</p>
@@ -553,8 +576,7 @@ async function loadMobils() {
                 <p class="text-xs font-semibold text-blue-700 mb-1">
                   <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                  </svg>
-                  Sopir
+                  </svg>Sopir
                 </p>
                 <p class="text-xs text-gray-700">${sopirName}</p>
               </div>
@@ -563,8 +585,7 @@ async function loadMobils() {
                   <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                     <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
-                  </svg>
-                  Mobil
+                  </svg>Mobil
                 </p>
                 <p class="text-xs text-gray-700">${mobilDesc}</p>
               </div>
@@ -577,14 +598,13 @@ async function loadMobils() {
           <div class="border-t border-gray-100 pt-3 flex gap-3">
             <button onclick="openRejectModal(${order.order_id})"
               class="flex-1 flex items-center justify-center gap-2 border-2 border-red-200 text-red-600
-                     rounded-xl py-2.5 text-center font-semibold text-sm
+                     rounded-xl py-2.5 font-semibold text-sm
                      hover:bg-red-50 hover:border-red-300 transition-all">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
               Tolak
             </button>
-
             <button onclick="openAssignModal(${order.order_id})"
               class="flex-1 flex items-center justify-center gap-2 bg-pertamina text-white
                      rounded-xl py-2.5 font-semibold text-sm
@@ -596,32 +616,20 @@ async function loadMobils() {
             </button>
           </div>
           ` : `
-          <div class="border-t border-gray-100 pt-3 grid grid-cols-2 gap-3">
-            ${penumpangNomor ? `
-              <a href="https://wa.me/${penumpangNomor}?text=Halo%20${encodeURIComponent(penumpangName)},%20saya%20dari%20tim%20SIKAR."
-                 target="_blank"
-                 class="flex items-center justify-center gap-2 border-2 border-green-200 text-green-700
-                        rounded-xl py-2.5 text-center font-semibold text-sm
-                        hover:bg-green-50 hover:border-green-300 transition-all">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"></path>
-                </svg>
-                Penumpang
-              </a>
+          <div class="border-t border-gray-100 pt-3 space-y-2">
+
+            ${isOnProcess ? `
+            <button onclick="openConfirmOrderModal(${order.order_id})"
+              class="w-full flex items-center justify-center gap-2
+                     bg-blue-600 hover:bg-blue-700 text-white
+                     rounded-xl py-2.5 font-semibold text-sm
+                     transition-all shadow-sm hover:shadow-md">
+              Konfirmasi Selesai
+            </button>
             ` : ''}
 
-            ${sopirNomor ? `
-              <a href="https://wa.me/${sopirNomor}?text=Halo%20${encodeURIComponent(sopirName)},%20ini%20tentang%20order%20%23${order.order_id}."
-                 target="_blank"
-                 class="flex items-center justify-center gap-2 border-2 border-blue-200 text-blue-700
-                        rounded-xl py-2.5 text-center font-semibold text-sm
-                        hover:bg-blue-50 hover:border-blue-300 transition-all">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"></path>
-                </svg>
-                Sopir
-              </a>
-            ` : ''}
+            ${waButtons}
+
           </div>
           `}
 
@@ -633,39 +641,31 @@ async function loadMobils() {
   function populateSopirSelect() {
     const select = document.getElementById('sopirSelect');
     select.innerHTML = '<option value="">Pilih sopir yang tersedia</option>';
-    
     if (!availableSopirs || availableSopirs.length === 0) {
       select.innerHTML = '<option value="">Tidak ada sopir tersedia</option>';
       return;
     }
-    
     availableSopirs.forEach(sopir => {
       const option = document.createElement('option');
       option.value = sopir.sopir_id;
       option.textContent = sopir.name;
       select.appendChild(option);
     });
-    
-    console.log('✅ Sopir select populated with', availableSopirs.length, 'options');
   }
 
   function populateMobilSelect() {
     const select = document.getElementById('mobilSelect');
     select.innerHTML = '<option value="">Pilih mobil yang tersedia</option>';
-    
     if (!availableMobils || availableMobils.length === 0) {
       select.innerHTML = '<option value="">Tidak ada mobil tersedia</option>';
       return;
     }
-    
     availableMobils.forEach(mobil => {
       const option = document.createElement('option');
       option.value = mobil.mobil_id;
       option.textContent = mobil.deskripsi;
       select.appendChild(option);
     });
-    
-    console.log('✅ Mobil select populated with', availableMobils.length, 'options');
   }
 
   /* ===============================
@@ -674,22 +674,16 @@ async function loadMobils() {
   function openAssignModal(orderId) {
     selectedOrderId = orderId;
     const order = currentOrders.find(o => o.order_id === orderId);
-    
     if (order) {
       document.getElementById('modalOrderId').textContent = `#${order.order_id}`;
     }
-    
     document.getElementById('sopirSelect').value = '';
     document.getElementById('mobilSelect').value = '';
     document.getElementById('sopirError').classList.add('hidden');
     document.getElementById('mobilError').classList.add('hidden');
-    
     loadSopirs();
     loadMobils();
-    
     document.getElementById('assignModal').classList.remove('hidden');
-    
-    console.log('📝 Modal opened for order:', orderId);
   }
   window.openAssignModal = openAssignModal;
 
@@ -711,6 +705,18 @@ async function loadMobils() {
   }
   window.closeRejectModal = closeRejectModal;
 
+  function openConfirmOrderModal(orderId) {
+    selectedOrderId = orderId;
+    document.getElementById('confirmOrderModal').classList.remove('hidden');
+  }
+  window.openConfirmOrderModal = openConfirmOrderModal;
+
+  function closeConfirmOrderModal() {
+    document.getElementById('confirmOrderModal').classList.add('hidden');
+    selectedOrderId = null;
+  }
+  window.closeConfirmOrderModal = closeConfirmOrderModal;
+
   /* ===============================
      API ACTIONS
   ================================ */
@@ -721,31 +727,28 @@ async function loadMobils() {
     const mobilId = mobilSelect.value;
     
     const btnConfirm = document.getElementById('btnConfirmAssign');
-    const btnText = document.getElementById('btnAssignText');
-    const btnLoader = document.getElementById('btnAssignLoader');
+    const btnText    = document.getElementById('btnAssignText');
+    const btnLoader  = document.getElementById('btnAssignLoader');
     
     let hasError = false;
     
-    if (!sopirId || sopirId === '' || sopirId === 'Tidak ada sopir tersedia') {
+    if (!sopirId || sopirId === '') {
       document.getElementById('sopirError').classList.remove('hidden');
       hasError = true;
     } else {
       document.getElementById('sopirError').classList.add('hidden');
     }
     
-    if (!mobilId || mobilId === '' || mobilId === 'Tidak ada mobil tersedia') {
+    if (!mobilId || mobilId === '') {
       document.getElementById('mobilError').classList.remove('hidden');
       hasError = true;
     } else {
       document.getElementById('mobilError').classList.add('hidden');
     }
     
-    if (hasError) {
-      return;
-    }
-    
+    if (hasError) return;
     if (!selectedOrderId) {
-      showToast('Error', 'Order ID tidak valid', 'error');
+      showNotification('Order ID tidak valid', 'error');
       return;
     }
     
@@ -755,10 +758,7 @@ async function loadMobils() {
     
     try {
       const parsedSopirId = parseInt(sopirId, 10);
-
-      if (isNaN(parsedSopirId)) {
-        throw new Error(`Sopir ID tidak valid`);
-      }
+      if (isNaN(parsedSopirId)) throw new Error('Sopir ID tidak valid');
             
       const payload = {
         order_id: selectedOrderId,
@@ -769,10 +769,7 @@ async function loadMobils() {
       
       const response = await fetch(`${API_BASE}/kepalasopir/assign`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload)
       });
       
@@ -780,25 +777,18 @@ async function loadMobils() {
       
       if (result.status) {
         closeAssignModal();
-        showToast('Berhasil!', 'Pesanan berhasil ditugaskan ke sopir dan mobil', 'success');
-        
-        setTimeout(() => {
-          loadOrders(currentFilter);
-        }, 500);
+        showNotification('Pesanan berhasil ditugaskan ke sopir dan mobil', 'success');
+        setTimeout(() => { loadOrders(currentFilter); loadAllCounts(); }, 500);
       } else {
         closeAssignModal();
         const errorMsg = result.message || 'Terjadi kesalahan saat menugaskan pesanan';
-        if (result.errors) {
-          const errorDetails = Object.values(result.errors).flat().join(', ');
-          showToast('Gagal Menugaskan', `${errorMsg}: ${errorDetails}`, 'error');
-        } else {
-          showToast('Gagal Menugaskan', errorMsg, 'error');
-        }
+        const detail = result.errors ? Object.values(result.errors).flat().join(', ') : '';
+        showNotification(detail ? `${errorMsg}: ${detail}` : errorMsg, 'error');
       }
     } catch (error) {
       console.error('❌ Error assigning order:', error);
       closeAssignModal();
-      showToast('Kesalahan', error.message || 'Tidak dapat terhubung ke server', 'error');
+      showNotification(error.message || 'Tidak dapat terhubung ke server', 'error');
     } finally {
       btnConfirm.disabled = false;
       btnText.classList.remove('hidden');
@@ -809,11 +799,11 @@ async function loadMobils() {
 
   async function confirmReject() {
     const btnReject = document.getElementById('btnConfirmReject');
-    const btnText = document.getElementById('btnRejectText');
+    const btnText   = document.getElementById('btnRejectText');
     const btnLoader = document.getElementById('btnRejectLoader');
     
     if (!selectedOrderId) {
-      showToast('Error', 'Order ID tidak valid', 'error');
+      showNotification('Order ID tidak valid', 'error');
       return;
     }
     
@@ -822,33 +812,25 @@ async function loadMobils() {
     btnLoader.classList.remove('hidden');
     
     try {
-      const url = `${API_BASE}/kepalasopir/reject/${selectedOrderId}?token=${API_TOKEN}`;
-      
-      const response = await fetch(url, {
+      const response = await fetch(`${API_BASE}/kepalasopir/reject/${selectedOrderId}?token=${API_TOKEN}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
       });
       
       const result = await response.json();
       
       if (result.status) {
         closeRejectModal();
-        showToast('Berhasil!', 'Pesanan berhasil ditolak', 'success');
-        
-        setTimeout(() => {
-          loadOrders(currentFilter);
-        }, 500);
+        showNotification('Pesanan berhasil ditolak', 'success');
+        setTimeout(() => { loadOrders(currentFilter); loadAllCounts(); }, 500);
       } else {
         closeRejectModal();
-        showToast('Gagal Menolak', result.message || 'Terjadi kesalahan saat menolak pesanan', 'error');
+        showNotification(result.message || 'Terjadi kesalahan saat menolak pesanan', 'error');
       }
     } catch (error) {
       console.error('❌ Error rejecting order:', error);
       closeRejectModal();
-      showToast('Kesalahan Jaringan', 'Tidak dapat terhubung ke server', 'error');
+      showNotification('Tidak dapat terhubung ke server', 'error');
     } finally {
       btnReject.disabled = false;
       btnText.classList.remove('hidden');
@@ -857,54 +839,101 @@ async function loadMobils() {
   }
   window.confirmReject = confirmReject;
 
+  async function doConfirmOrder() {
+    const btn       = document.getElementById('btnDoConfirm');
+    const btnText   = document.getElementById('btnConfirmOrderText');
+    const btnLoader = document.getElementById('btnConfirmOrderLoader');
+
+    if (!selectedOrderId) {
+      showNotification('Order ID tidak valid', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btnText.classList.add('hidden');
+    btnLoader.classList.remove('hidden');
+
+    try {
+      const response = await fetch(`${API_BASE}/kepalasopir/confirm/${selectedOrderId}?token=${API_TOKEN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (result.status) {
+        closeConfirmOrderModal();
+        showNotification('Pesanan berhasil dikonfirmasi selesai', 'success');
+        setTimeout(() => { loadOrders(currentFilter); loadAllCounts(); }, 500);
+      } else {
+        closeConfirmOrderModal();
+        showNotification(result.message || 'Terjadi kesalahan saat mengkonfirmasi pesanan', 'error');
+      }
+    } catch (error) {
+      console.error('❌ Error confirming order:', error);
+      closeConfirmOrderModal();
+      showNotification('Tidak dapat terhubung ke server', 'error');
+    } finally {
+      btn.disabled = false;
+      btnText.classList.remove('hidden');
+      btnLoader.classList.add('hidden');
+    }
+  }
+  window.doConfirmOrder = doConfirmOrder;
+
   /* ===============================
      FILTER
   ================================ */
-function filterByStatus(status, element) {
-  currentFilter = status;
-  
-  const filterButtons = document.querySelectorAll('.filter-btn');
-  filterButtons.forEach(btn => {
-    btn.classList.remove('bg-pertamina', 'text-white', 'shadow-sm');
-    btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
-  });
-  
-  if (element) {
-    element.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
-    element.classList.add('bg-pertamina', 'text-white', 'shadow-sm');
+  function filterByStatus(status, element) {
+    currentFilter = status;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.remove('bg-pertamina', 'text-white', 'shadow-sm');
+      btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+    });
+
+    // ✅ Reset semua badge ke warna tidak aktif
+    document.getElementById('countPending').className = 'ml-1.5 bg-gray-200 text-gray-600 text-xs px-1.5 py-0.5 rounded-full';
+    document.getElementById('countAssigned').className = 'ml-1.5 bg-gray-200 text-gray-600 text-xs px-1.5 py-0.5 rounded-full';
+    
+    if (element) {
+      element.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+      element.classList.add('bg-pertamina', 'text-white', 'shadow-sm');
+
+      // ✅ Badge aktif jadi putih transparan
+      const activeBadge = status === 'pending'
+        ? document.getElementById('countPending')
+        : document.getElementById('countAssigned');
+      activeBadge.className = 'ml-1.5 bg-white/30 text-white text-xs px-1.5 py-0.5 rounded-full';
+    }
+    
+    loadOrders(status);
+    loadAllCounts();
   }
-  
-  loadOrders(status);
-}
-window.filterByStatus = filterByStatus;
+  window.filterByStatus = filterByStatus;
 
   /* ===============================
      AUTO REFRESH
   ================================ */
   function startAutoRefresh() {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-    }
-    
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     autoRefreshInterval = setInterval(() => {
       loadOrders(currentFilter);
-    }, 30000);
+      loadAllCounts();
+    }, 10000);
   }
 
   function stopAutoRefresh() {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      autoRefreshInterval = null;
-    }
+    if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
   }
 
   /* ===============================
      SHOW/HIDE FUNCTIONS
   ================================ */
   function showLoading(show) {
-    const loading = document.getElementById('loadingContent');
-    const error = document.getElementById('errorContent');
-    const container = document.getElementById('ordersContainer');
+    const loading    = document.getElementById('loadingContent');
+    const error      = document.getElementById('errorContent');
+    const container  = document.getElementById('ordersContainer');
     const emptyState = document.getElementById('emptyState');
     
     if (show) {
@@ -918,17 +947,11 @@ window.filterByStatus = filterByStatus;
   }
 
   function showError(message) {
-    const loading = document.getElementById('loadingContent');
-    const error = document.getElementById('errorContent');
-    const errorMessage = document.getElementById('errorMessage');
-    const container = document.getElementById('ordersContainer');
-    const emptyState = document.getElementById('emptyState');
-    
-    loading.classList.add('hidden');
-    container.classList.add('hidden');
-    emptyState.classList.add('hidden');
-    error.classList.remove('hidden');
-    errorMessage.textContent = message;
+    document.getElementById('loadingContent').classList.add('hidden');
+    document.getElementById('ordersContainer').classList.add('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('errorContent').classList.remove('hidden');
+    document.getElementById('errorMessage').textContent = message;
   }
 
   /* ===============================
@@ -937,16 +960,16 @@ window.filterByStatus = filterByStatus;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       loadOrders(currentFilter);
+      loadAllCounts();
       startAutoRefresh();
     });
   } else {
     loadOrders(currentFilter);
+    loadAllCounts();
     startAutoRefresh();
   }
 
-  window.addEventListener('beforeunload', function() {
-    stopAutoRefresh();
-  });
+  window.addEventListener('beforeunload', stopAutoRefresh);
 })();
 </script>
 @endpush

@@ -169,6 +169,8 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
 
     if (data.status) {
       
+      localStorage.setItem('sikar_token', data.data.token);
+      localStorage.setItem('sikar_role', data.data.role);
       // Redirect langsung tanpa token di URL
       if (data.data.role === 'penumpang') {
         window.location.href = `/penumpang/pemesanan`;

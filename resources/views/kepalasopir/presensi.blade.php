@@ -486,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchPresensiData();
     
     // Auto refresh setiap 30 detik
-    setInterval(fetchPresensiData, 30000);
+    setInterval(fetchPresensiData, 10000);
 });
 </script>
 @endsection

@@ -14,6 +14,7 @@ class ReviewSopir extends Model
         'review',
         'sopir_id',
         'pengguna_id',
+        'order_id',
     ];
 
     public function sopir()

@@ -11,8 +11,9 @@ class Pengguna extends Model
     protected $fillable = [
         'name',
         'token',
+        'web_token',
         'role',
-        'nomor'
+        'nomor',
     ];
     
     protected $hidden = [

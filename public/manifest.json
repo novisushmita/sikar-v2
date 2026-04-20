@@ -1,7 +1,7 @@
 {
     "name": "SIKAR - Sistem Informasi Kendaraan",
     "short_name": "SIKAR",
-    "start_url": "/index.php",
+    "start_url": "/",
     "background_color": "#FDECEC",
     "description": "Sistem Informasi Kendaraan",
     "display": "standalone",

@@ -45,4 +45,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * @return array<string>
+     */
+    public function routeNotificationForFcm(): array
+    {
+        return [
+            $this->web_token
+        ];
+    }
 }

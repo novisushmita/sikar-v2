@@ -63,7 +63,7 @@ class Order extends Model
     }
     public function scopeOutstandingSopir($query)
     {
-        return $query->whereIn('status', [ self::STATUS_ON_PROCESS, self::STATUS_ASSIGNED, self::STATUS_CONFIRMED]);
+        return $query->whereIn('status', [ self::STATUS_ON_PROCESS, self::STATUS_ASSIGNED]);
     }
     public function scopeOutstandingKepalaSopir($query)
     {

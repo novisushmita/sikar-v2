@@ -12,66 +12,17 @@ class MobilSeeder extends Seeder
         $now = now();
 
         $daftarMobil = [
-            [
-                'mobil_id' => 'Z 1234 AB',
-                'deskripsi' => 'Toyota Avanza - Putih (2020)',
-                'kapasitas' => 7,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 5678 CD',
-                'deskripsi' => 'Toyota Avanza - Hitam (2021)',
-                'kapasitas' => 7,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 9012 EF',
-                'deskripsi' => 'Toyota Innova Reborn - Silver (2022)',
-                'kapasitas' => 8,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 3456 GH',
-                'deskripsi' => 'Toyota Innova Reborn - Hitam (2021)',
-                'kapasitas' => 8,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 7890 IJ',
-                'deskripsi' => 'Toyota Hiace - Putih (2019)',
-                'kapasitas' => 16,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 1122 KL',
-                'deskripsi' => 'Honda CR-V - Abu-abu (2020)',
-                'kapasitas' => 5,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 3344 MN',
-                'deskripsi' => 'Mitsubishi Pajero Sport - Hitam (2022)',
-                'kapasitas' => 7,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 5566 OP',
-                'deskripsi' => 'Suzuki Ertiga - Merah (2021)',
-                'kapasitas' => 7,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 7788 QR',
-                'deskripsi' => 'Daihatsu Xenia - Biru (2020)',
-                'kapasitas' => 7,
-                'availability' => 1,
-            ],
-            [
-                'mobil_id' => 'Z 9900 ST',
-                'deskripsi' => 'Toyota Fortuner - Putih (2023)',
-                'kapasitas' => 7,
-                'availability' => 1,
-            ],
+            ['mobil_id' => 'Z 1588 KR', 'deskripsi' => 'Toyota Fortuner', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 1589 KR', 'deskripsi' => 'Toyota Innova', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 1590 KR', 'deskripsi' => 'Toyota Innova', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 1591 KR', 'deskripsi' => 'Toyota Innova', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 1421 KR', 'deskripsi' => 'Toyota Innova', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 1422 KR', 'deskripsi' => 'Toyota Innova', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 1423 KR', 'deskripsi' => 'Toyota Innova', 'kapasitas' => 8, 'availability' => 1],
+            ['mobil_id' => 'Z 7135 KR', 'deskripsi' => 'Toyota Hiace', 'kapasitas' => 16, 'availability' => 1],
+            ['mobil_id' => 'Z 8133 KR', 'deskripsi' => 'Toyota Hilux Patroli Cabin', 'kapasitas' => 5, 'availability' => 1],
+            ['mobil_id' => 'Z 8134 KR', 'deskripsi' => 'Toyota Hilux Cluster', 'kapasitas' => 5, 'availability' => 1],
+            ['mobil_id' => 'Z 8135 KR', 'deskripsi' => 'Toyota Hilux Single Cabin', 'kapasitas' => 2, 'availability' => 1],
         ];
 
         foreach ($daftarMobil as $mobil) {

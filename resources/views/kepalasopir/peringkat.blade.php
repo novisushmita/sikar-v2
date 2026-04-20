@@ -58,7 +58,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     loadDrivers();
-    setInterval(loadDrivers, 300000);
+    setInterval(loadDrivers, 10000);
 });
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
