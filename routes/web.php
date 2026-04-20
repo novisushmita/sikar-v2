@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\TokenWebController;
 /*
 |--------------------------------------------------------------------------
 | AUTH
@@ -85,5 +85,7 @@ Route::middleware('auth.token')->group(function () {
         Route::get('/presensi', fn () => view('kepalasopir.presensi'))
             ->name('kepalasopir.presensi');
     });
+
+    Route::post('tokenweb', [TokenWebController::class, '__invoke']);
 
 });
