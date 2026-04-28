@@ -61,27 +61,26 @@
       <p class="text-xs text-gray-400 mt-2" id="loadingAttempt"></p>
     </div>
 
-    <!-- ERROR STATE -->
-    <div id="errorContent" class="hidden text-center py-12">
-      <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-        </svg>
-      </div>
-      <p class="text-gray-800 font-semibold text-lg mb-2">Gagal Memuat Data</p>
-      <p class="text-gray-600 mb-6 text-sm" id="errorMessage">Terjadi kesalahan saat memuat data</p>
-      <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <button onclick="location.reload()"
-          class="bg-pertamina text-white px-6 py-3 rounded-xl hover:bg-pertaminaDark transition-all shadow-sm font-semibold">
-          Muat Ulang
-        </button>
-        <button onclick="window.location.href='/penumpang/pemesanan'"
-          class="bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition-all shadow-sm font-semibold">
-          Buat Pesanan Baru
-        </button>
-      </div>
-    </div>
-
+<!-- ERROR STATE -->
+<div id="errorContent" class="hidden text-center py-12">
+  <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+  </div>
+  <p class="text-gray-800 font-semibold text-lg mb-1">Tidak Ada Pemesanan Aktif</p>
+  <p class="text-gray-400 text-sm mb-6" id="errorMessage">Kamu belum memiliki pemesanan yang sedang berjalan</p>
+  <div class="flex flex-col sm:flex-row gap-3 justify-center">
+    <a href="/penumpang/riwayat"
+      class="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-200 transition-all font-semibold text-sm">
+      Lihat Riwayat
+    </a>
+    <a href="/penumpang/pemesanan"
+      class="bg-pertamina text-white px-6 py-3 rounded-xl hover:bg-pertaminaDark transition-all font-semibold text-sm">
+      Buat Pesanan Baru
+    </a>
+  </div>
+</div>
     <!-- MAIN CONTENT -->
     <div id="mainContent" class="hidden">
       <div class="border border-gray-200 rounded-lg md:rounded-xl p-4 md:p-5 transition-all">

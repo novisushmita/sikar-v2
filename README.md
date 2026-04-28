@@ -1,6 +1,6 @@
 # SIKAR — Sistem Informasi Kendaraan
 
-SIKAR adalah sistem manajemen pemesanan kendaraan antar berbasis web yang digunakan secara internal di lingkungan perusahaan. Sistem ini menghubungkan tiga peran utama: **Penumpang** yang memesan kendaraan, **Sopir** yang menjalankan perjalanan, dan **Kepala Sopir** yang bertugas mengatur penugasan dan memantau keseluruhan operasional.
+SIKAR adalah sistem manajemen pemesanan kendaraan berbasis web yang digunakan secara internal di lingkungan perusahaan. Sistem ini menghubungkan tiga peran utama: **Penumpang** yang memesan kendaraan, **Sopir** yang menjalankan perjalanan, dan **Kepala Sopir** yang bertugas mengatur penugasan dan memantau keseluruhan operasional.
 
 Sistem ini dibangun menggunakan **Laravel 12** di sisi backend dengan **Tailwind CSS** dan **Vite** di sisi frontend, serta dilengkapi dengan notifikasi push realtime menggunakan **Firebase Cloud Messaging (FCM)**.
 
